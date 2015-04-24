@@ -31,17 +31,8 @@ import me.seeber.guicesqueezer.GuiceSqueezer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import com.google.inject.AbstractModule;
-
 @RunWith(GuiceSqueezer.class)
 public class TestFailure {
-    
-    public static class TestModule extends AbstractModule {
-        @Override
-        protected void configure() {
-            // Empty
-        }
-    }
     
     @Test(expected = RuntimeException.class)
     public void testInjection() {

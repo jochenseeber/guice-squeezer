@@ -29,11 +29,21 @@ package me.seeber.guicesqueezer;
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 
-public class MethodModule extends AbstractModule {
+public class TestModule extends AbstractModule {
+    
+    private final String name;
+    
+    public TestModule() {
+        this("default");
+    }
+    
+    public TestModule(String name) {
+        this.name = name;
+    }
     
     @Override
     protected void configure() {
-        bind(String.class).annotatedWith(Names.named("method")).toInstance("1");
+        bind(String.class).annotatedWith(Names.named(name)).toInstance("1");
     }
     
 }

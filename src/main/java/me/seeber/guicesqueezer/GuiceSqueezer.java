@@ -26,25 +26,19 @@
 
 package me.seeber.guicesqueezer;
 
-import static java.lang.String.format;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
+import org.junit.Test;
+import org.junit.runner.Runner;
 import org.junit.runners.BlockJUnit4ClassRunner;
+import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
+import org.junit.runners.model.Statement;
 
-import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Module;
 
 /**
- * Runner for Guice based tests
+ * JUnit {@link Runner} to run Guice based unit tests
  */
 public class GuiceSqueezer extends BlockJUnit4ClassRunner {
     
@@ -52,6 +46,11 @@ public class GuiceSqueezer extends BlockJUnit4ClassRunner {
      * Injector used to create test objects
      */
     private Injector injector;
+    
+    /**
+     * Injector factory used to create Guice injectors for tests
+     */
+    private InjectorFactory injectorFactory;
     
     /**
      * Create a new runner
@@ -81,152 +80,45 @@ public class GuiceSqueezer extends BlockJUnit4ClassRunner {
      */
     protected Injector getInjector() {
         if (this.injector == null) {
-            ModuleBuilder module = setupModule(getTestClass().getJavaClass());
-            this.injector = Guice.createInjector(module.get());
+            this.injector = getInjectorFactory().createTestClassInjector(getTestClass().getJavaClass());
         }
         
         return this.injector;
     }
     
     /**
-     * Setup the module used to create the test injector
+     * Get a method invoker
      * 
-     * This method inspects the test class and its super classes to detect all configured test modules. Currently, you
-     * can configure modules in three ways:
-     * <ol>
-     * <li>Annotate a test class with a {@link TestModules} annotation
-     * <li>Create a nested public static class that implements {@link Module} and has a no-arg constructor
-     * <li>Annotate a public static method that returns a modile with {@link ProvidesModule}
-     * </ol>
-     * 
-     * The returned module builder contains a module with all configured test modules. Modules configured in a
-     * superclass are overridden by modules in subclasses, and modules from each class are combined into one module.
-     * 
-     * @param testClass Test class
-     * @return Module builder for test module
+     * @see org.junit.runners.BlockJUnit4ClassRunner#methodInvoker(org.junit.runners.model.FrameworkMethod,
+     *      java.lang.Object)
      */
-    protected ModuleBuilder setupModule(Class<?> testClass) {
-        TestModules testModules = testClass.getAnnotation(TestModules.class);
-        List<Module> modules = new ArrayList<>();
-        
-        if (testModules != null) {
-            for (Class<? extends Module> moduleClass : testModules.value()) {
-                Module module = createModule(moduleClass);
-                modules.add(module);
-            }
-        }
-        
-        for (Class<?> nestedClass : testClass.getDeclaredClasses()) {
-            if ((nestedClass.getModifiers() & Modifier.STATIC) != 0 && Module.class.isAssignableFrom(nestedClass)) {
-                Class<? extends Module> moduleClass = nestedClass.asSubclass(Module.class);
-                
-                Module module = createModule(moduleClass);
-                modules.add(module);
-            }
-        }
-        
-        for (Method method : testClass.getDeclaredMethods()) {
-            if (method.getAnnotation(ProvidesModule.class) != null) {
-                Module module = createModule(method);
-                modules.add(module);
-            }
-        }
-        
-        Module annotationModule = createAnnotationModule(testClass);
-        modules.add(annotationModule);
-        
-        ModuleBuilder builder = ModuleBuilder.modules(modules);
-        
-        if (testClass.getSuperclass() != null) {
-            ModuleBuilder inheritedModule = setupModule(testClass.getSuperclass());
-            builder = inheritedModule.override(builder.get());
-        }
-        
-        return builder;
-    }
-    
-    protected Module createAnnotationModule(Class<?> testClass) {
-        Map<Class<?>, Class<?>> bindings = new HashMap<>();
-        
-        for (Class<?> nestedClass : testClass.getDeclaredClasses()) {
-            ProvidesType providesAnnotation = nestedClass.getAnnotation(ProvidesType.class);
-            
-            if (providesAnnotation != null) {
-                if ((nestedClass.getModifiers() & Modifier.STATIC) == 0) {
-                    throw new RuntimeException(format("Class '%s' annotated with ProvidesType must be static.",
-                            nestedClass));
-                }
-                
-                Class<?> interfaceClass = providesAnnotation.value();
-                
-                if (interfaceClass == Void.class) {
-                    if (nestedClass.getInterfaces().length == 0) {
-                        throw new RuntimeException(
-                                format("ProvidesType annotation on class '%s' needs to specify the bound interface or the class needs to implement an interface.",
-                                        nestedClass.getName()));
-                    }
-                    
-                    interfaceClass = nestedClass.getInterfaces()[0];
-                }
-                
-                bindings.put(interfaceClass, nestedClass);
-            }
-        }
-        
-        Module module = new BindingModule(bindings);
-        return module;
+    @Override
+    protected Statement methodInvoker(FrameworkMethod testMethod, Object test) {
+        Statement statement = getInjectorFactory().createInvocationStatement(testMethod, test, this.injector);
+        return statement;
     }
     
     /**
-     * Create a test module from a module class.
-     * 
-     * The class must be public.
-     * 
-     * @param moduleClass Class of test module
-     * @return Test module
+     * @see org.junit.runners.BlockJUnit4ClassRunner#validateTestMethods(java.util.List)
      */
-    protected <M extends Module> M createModule(Class<M> moduleClass) {
-        if ((moduleClass.getModifiers() & Modifier.PUBLIC) == 0) {
-            throw new IllegalStateException(format("Module class '%s' must be public.", moduleClass));
-        }
-        
-        try {
-            M module = moduleClass.newInstance();
-            return module;
-        }
-        catch (InstantiationException | IllegalAccessException e) {
-            throw new RuntimeException(format("Could not create module '%s'", moduleClass.getName()), e);
-        }
+    @Override
+    protected void validateTestMethods(List<Throwable> errors) {
+        List<FrameworkMethod> testMethods = getTestClass().getAnnotatedMethods(Test.class);
+        List<Throwable> validationErrors = getInjectorFactory().validateTestMethods(testMethods);
+        errors.addAll(validationErrors);
     }
     
     /**
-     * Create a test module by calling a factory method
+     * Get the factory used to create Guice injectors for the test
      * 
-     * The method must be public, static and return an object of type {@link Module}.
-     * 
-     * @param method Method that returns the test module
-     * @return Test module
+     * @return Injector factory
      */
-    protected Module createModule(Method method) {
-        if ((method.getModifiers() & Modifier.STATIC) == 0) {
-            throw new RuntimeException(format("Module provider method '%s' must be static.", method));
+    protected InjectorFactory getInjectorFactory() {
+        if (this.injectorFactory == null) {
+            this.injectorFactory = new DefaultInjectorFactory();
         }
         
-        if (!Module.class.isAssignableFrom(method.getReturnType())) {
-            throw new RuntimeException(format("Module provider method '%s' must return a Module.", method));
-        }
-        
-        if ((method.getModifiers() & Modifier.PUBLIC) == 0) {
-            throw new IllegalStateException(format("Module provider method '%s' must be public.", method));
-        }
-        
-        try {
-            Module module = (Module) method.invoke(null);
-            return module;
-        }
-        catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-            throw new RuntimeException(format("Error calling module provider method '%s'", method), e);
-        }
+        return this.injectorFactory;
     }
     
 }

@@ -32,8 +32,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 
 import me.seeber.guicesqueezer.GuiceSqueezer;
-import me.seeber.guicesqueezer.MethodModule;
-import me.seeber.guicesqueezer.ProvidesModule;
+import me.seeber.guicesqueezer.TestModule;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,9 +42,8 @@ import com.google.inject.Module;
 @RunWith(GuiceSqueezer.class)
 public class TestWithModuleMethod {
     
-    @ProvidesModule
     public static Module testModule() {
-        return new MethodModule();
+        return new TestModule("method");
     }
     
     @Inject

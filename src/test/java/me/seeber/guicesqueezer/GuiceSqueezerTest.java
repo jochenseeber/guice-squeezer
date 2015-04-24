@@ -27,60 +27,59 @@
 package me.seeber.guicesqueezer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import me.seeber.guicesqueezer.test.TestWithAllModuleConfigurations;
-import me.seeber.guicesqueezer.test.TestWithModuleMethod;
-import me.seeber.guicesqueezer.test.TestWithModulesAnnotation;
-import me.seeber.guicesqueezer.test.TestWithNestedModuleClass;
-import me.seeber.guicesqueezer.test.TestWithProvidesType;
-import me.seeber.guicesqueezer.test.TestWithProvidesType.TestClass1;
-import me.seeber.guicesqueezer.test.TestWithProvidesType.TestClass2;
-import me.seeber.guicesqueezer.test.TestWithProvidesType.TestInterface1;
-import me.seeber.guicesqueezer.test.TestWithProvidesType.TestInterface2;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
+import org.junit.runners.model.Statement;
 
 import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.inject.name.Names;
 
 public class GuiceSqueezerTest {
     
-    @Test
-    public void testModuleFromAnnotation() throws InitializationError {
-        GuiceSqueezer runner = new GuiceSqueezer(TestWithModulesAnnotation.class);
-        Injector injector = runner.getInjector();
-        assertThat(injector.getInstance(Key.get(String.class, Names.named("annotation")))).isEqualTo("1");
+    public GuiceSqueezer squeezer;
+    
+    @Before
+    public void initializeTest() throws InitializationError {
+        this.squeezer = new GuiceSqueezer(GuiceSqueezerTest.class);
     }
     
     @Test
-    public void testModuleFromMethod() throws InitializationError {
-        GuiceSqueezer runner = new GuiceSqueezer(TestWithModuleMethod.class);
-        Injector injector = runner.getInjector();
-        assertThat(injector.getInstance(Key.get(String.class, Names.named("method")))).isEqualTo("1");
+    public void testGetInjectorFactory() {
+        InjectorFactory injectorFactory = this.squeezer.getInjectorFactory();
+        assertThat(injectorFactory).isNotNull();
     }
     
     @Test
-    public void testModuleFromNestedClass() throws InitializationError {
-        GuiceSqueezer runner = new GuiceSqueezer(TestWithNestedModuleClass.class);
-        Injector injector = runner.getInjector();
-        assertThat(injector.getInstance(Key.get(String.class, Names.named("nested")))).isEqualTo("1");
+    public void testGetInjector() {
+        Injector injector = this.squeezer.getInjector();
+        assertThat(injector).isNotNull();
     }
     
     @Test
-    public void testModuleFromAll() throws InitializationError {
-        GuiceSqueezer runner = new GuiceSqueezer(TestWithAllModuleConfigurations.class);
-        Injector injector = runner.getInjector();
-        assertThat(injector.getInstance(Key.get(String.class, Names.named("annotation")))).isEqualTo("1");
-        assertThat(injector.getInstance(Key.get(String.class, Names.named("nested")))).isEqualTo("1");
-        assertThat(injector.getInstance(Key.get(String.class, Names.named("method")))).isEqualTo("1");
+    public void testCreateTest() throws Exception {
+        Object testObject = this.squeezer.createTest();
+        assertThat(testObject).isNotNull().isInstanceOf(GuiceSqueezerTest.class);
     }
     
     @Test
-    public void testProvidesType() throws InitializationError {
-        GuiceSqueezer runner = new GuiceSqueezer(TestWithProvidesType.class);
-        Injector injector = runner.getInjector();
-        assertThat(injector.getInstance(TestInterface1.class)).isInstanceOf(TestClass1.class);
-        assertThat(injector.getInstance(TestInterface2.class)).isInstanceOf(TestClass2.class);
+    public void testMethodInvoker() throws Exception {
+        Object testObject = this.squeezer.createTest();
+        FrameworkMethod testMethod = new FrameworkMethod(testObject.getClass().getMethod("testMethodInvoker"));
+        
+        Statement statement = this.squeezer.methodInvoker(testMethod, testObject);
+        assertThat(statement).isNotNull();
     }
+    
+    @Test
+    public void testValidateTestMethods() {
+        List<Throwable> errors = new ArrayList<>();
+        this.squeezer.validateTestMethods(errors);
+        assertThat(errors).isEmpty();
+    }
+    
 }

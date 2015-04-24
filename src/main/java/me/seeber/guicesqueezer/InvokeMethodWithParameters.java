@@ -24,30 +24,27 @@
  * #L%
  */
 
-package me.seeber.guicesqueezer.test;
+package me.seeber.guicesqueezer;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.runners.model.FrameworkMethod;
+import org.junit.runners.model.Statement;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-
-import me.seeber.guicesqueezer.GuiceSqueezer;
-import me.seeber.guicesqueezer.TestModule;
-import me.seeber.guicesqueezer.TestModules;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-@RunWith(GuiceSqueezer.class)
-@TestModules(TestModule.class)
-public class TestWithModulesAnnotation {
+public class InvokeMethodWithParameters extends Statement {
     
-    @Inject
-    @Named("default")
-    private String testString;
+    private final FrameworkMethod testMethod;
     
-    @Test
-    public void testInjection() {
-        assertThat(this.testString).isEqualTo("1");
+    private final Object target;
+    
+    private final Object[] parameters;
+    
+    public InvokeMethodWithParameters(FrameworkMethod testMethod, Object target, Object... parameters) {
+        this.testMethod = testMethod;
+        this.target = target;
+        this.parameters = parameters;
+    }
+    
+    @Override
+    public void evaluate() throws Throwable {
+        this.testMethod.invokeExplosively(this.target, this.parameters);
     }
 }

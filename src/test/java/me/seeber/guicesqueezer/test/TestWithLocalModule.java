@@ -23,16 +23,27 @@
  * THE SOFTWARE.
  * #L%
  */
-package me.seeber.guicesqueezer;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.name.Names;
+package me.seeber.guicesqueezer.test;
 
-public class AnnotationModule extends AbstractModule {
+import static org.assertj.core.api.Assertions.assertThat;
+
+import javax.inject.Named;
+
+import me.seeber.guicesqueezer.GuiceSqueezer;
+import me.seeber.guicesqueezer.TestModule;
+import me.seeber.guicesqueezer.TestModules;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@RunWith(GuiceSqueezer.class)
+public class TestWithLocalModule {
     
-    @Override
-    protected void configure() {
-        bind(String.class).annotatedWith(Names.named("annotation")).toInstance("1");
+    @Test
+    @TestModules(TestModule.class)
+    public void testParameter(@Named("default") String testString) {
+        assertThat(testString).isEqualTo("1");
     }
     
 }

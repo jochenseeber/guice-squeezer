@@ -37,7 +37,7 @@ import com.google.inject.Module;
  * Annotation for methods that return test modules
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
+@Target({ ElementType.TYPE, ElementType.METHOD })
 public @interface TestModules {
     
     /**

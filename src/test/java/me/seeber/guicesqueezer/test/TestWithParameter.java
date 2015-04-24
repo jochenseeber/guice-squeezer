@@ -28,52 +28,51 @@ package me.seeber.guicesqueezer.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.inject.Inject;
 import javax.inject.Named;
 
 import me.seeber.guicesqueezer.GuiceSqueezer;
-import me.seeber.guicesqueezer.TestModule;
-import me.seeber.guicesqueezer.TestModules;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Module;
 import com.google.inject.name.Names;
+import com.sun.istack.internal.Nullable;
 
 @RunWith(GuiceSqueezer.class)
-@TestModules(TestModule.class)
-public class TestWithAllModuleConfigurations {
+public class TestWithParameter {
     
-    public static class NestedModule extends AbstractModule {
+    public static class TestModule extends AbstractModule {
         @Override
         protected void configure() {
-            bind(String.class).annotatedWith(Names.named("nested")).toInstance("1");
+            bind(String.class).toInstance("1");
+            bind(String.class).annotatedWith(Names.named("2")).toInstance("2");
+            bind(String.class).annotatedWith(Names.named("3")).toInstance("3");
         }
     }
     
-    public static Module testModule() {
-        return new TestModule("method");
+    @Test
+    public void testMethod_NoParameters() {
+        // Empty
     }
-    
-    @Inject
-    @Named("nested")
-    private String nestedTestString;
-    
-    @Inject
-    @Named("method")
-    private String methodTestString;
-    
-    @Inject
-    @Named("default")
-    private String annotationTestString;
     
     @Test
-    public void testInjection() {
-        assertThat(this.nestedTestString).isEqualTo("1");
-        assertThat(this.methodTestString).isEqualTo("1");
-        assertThat(this.annotationTestString).isEqualTo("1");
+    public void testMethod_Parameter(String testString) {
+        assertThat(testString).isEqualTo("1");
     }
     
+    @Test
+    public void testMethod_ParameterWithQualifier(@Named("2") String testString) {
+        assertThat(testString).isEqualTo("2");
+    }
+    
+    @Test
+    public void testMethod_ParameterWithBindingAnnotation(@com.google.inject.name.Named("3") String testString) {
+        assertThat(testString).isEqualTo("3");
+    }
+    
+    @Test
+    public void testMethod_ParameterWithOtherAnnotation(@Nullable String testString) {
+        assertThat(testString).isEqualTo("1");
+    }
 }

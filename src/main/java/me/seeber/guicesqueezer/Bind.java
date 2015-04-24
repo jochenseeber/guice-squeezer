@@ -35,7 +35,14 @@ import java.lang.annotation.Target;
  * Annotation for methods that return test modules
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface ProvidesModule {
-    // Empty
+@Target(ElementType.TYPE)
+public @interface Bind {
+    
+    /**
+     * Type to bind
+     * 
+     * @return Type to bind
+     */
+    public Class<?> value() default Void.class;
+    
 }

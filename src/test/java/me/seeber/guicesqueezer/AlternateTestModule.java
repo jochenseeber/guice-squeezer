@@ -26,23 +26,24 @@
 
 package me.seeber.guicesqueezer;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import com.google.inject.AbstractModule;
+import com.google.inject.name.Names;
 
-/**
- * Annotation for methods that return test modules
- */
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface ProvidesType {
+public class AlternateTestModule extends AbstractModule {
     
-    /**
-     * Type to bind
-     * 
-     * @return Type to bind
-     */
-    public Class<?> value() default Void.class;
+    private final String name;
+    
+    public AlternateTestModule() {
+        this("alternate");
+    }
+    
+    public AlternateTestModule(String name) {
+        this.name = name;
+    }
+    
+    @Override
+    protected void configure() {
+        bind(String.class).annotatedWith(Names.named(this.name)).toInstance("1");
+    }
     
 }
