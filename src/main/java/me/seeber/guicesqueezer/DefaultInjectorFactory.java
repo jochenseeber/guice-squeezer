@@ -32,25 +32,20 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.inject.Provider;
 import javax.inject.Qualifier;
 
 import org.junit.Test;
-import org.junit.internal.runners.statements.InvokeMethod;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
 
 import com.google.inject.BindingAnnotation;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
 
@@ -363,52 +358,9 @@ public class DefaultInjectorFactory implements InjectorFactory {
      */
     @Override
     public Statement createInvocationStatement(FrameworkMethod testMethod, Object test, Injector classInjector) {
-        Statement statement = null;
         Method method = testMethod.getMethod();
-        Type[] parameterTypes = method.getGenericParameterTypes();
-
-        if (parameterTypes.length == 0) {
-            statement = new InvokeMethod(testMethod, test);
-        }
-        else {
-            Injector injector = createTestMethodInjector(method, classInjector);
-            Object[] parameters = new Object[parameterTypes.length];
-
-            for (int i = 0; i < parameters.length; ++i) {
-                boolean provider = false;
-                Type parameterType = parameterTypes[i];
-
-                if (parameterType instanceof ParameterizedType) {
-                    ParameterizedType parameterizedType = (ParameterizedType) parameterType;
-
-                    if (parameterizedType.getRawType() == Provider.class
-                            || parameterizedType.getRawType() == com.google.inject.Provider.class) {
-                        provider = true;
-                        parameterType = parameterizedType.getActualTypeArguments()[0];
-                    }
-                }
-
-                Key<?> key = Key.get(parameterType);
-
-                for (Annotation annotation : method.getParameterAnnotations()[i]) {
-                    if (annotation.annotationType().getAnnotation(Qualifier.class) != null
-                            || annotation.annotationType().getAnnotation(BindingAnnotation.class) != null) {
-                        key = Key.get(parameterType, annotation);
-                        break;
-                    }
-                }
-
-                if (provider) {
-                    parameters[i] = injector.getProvider(key);
-                }
-                else {
-                    parameters[i] = injector.getInstance(key);
-                }
-            }
-
-            statement = new InvokeMethodWithParameters(testMethod, test, parameters);
-        }
-
+        Injector injector = createTestMethodInjector(method, classInjector);
+        InvokeMethodWithParameters statement = new InvokeMethodWithParameters(testMethod, test, injector);
         return statement;
     }
 
