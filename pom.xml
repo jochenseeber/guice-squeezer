@@ -47,6 +47,8 @@
                 <configuration>
                     <pushChanges>false</pushChanges>
                     <localCheckout>true</localCheckout>
+                    <useReleaseProfile>false</useReleaseProfile>
+                    <releaseProfiles>release</releaseProfiles>
                 </configuration>
                 <dependencies>
                     <dependency>
@@ -181,6 +183,44 @@
     <scm>
         <connection>scm:git:https://github.com/jochenseeber/guice-squeezer.git</connection>
         <developerConnection>scm:git:git@github.com:jochenseeber/guice-squeezer.git</developerConnection>
+        <url>https://github.com/jochenseeber/guice-squeezer</url>
         <tag>master</tag>
     </scm>
+    <distributionManagement>
+        <repository>
+            <id>bintray-releases</id>
+            <url>https://api.bintray.com/maven/jochen/maven/guice-squeezer/;publish=1</url>
+        </repository>
+    </distributionManagement>
+    <profiles>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
