@@ -47,7 +47,7 @@ public abstract class Validate {
      */
     public static <T> T notNull(@Nullable T value, String name) throws NullPointerException {
         if (value == null) {
-            throw new IllegalArgumentException(format("Value '%s' must not be null.", name));
+            throw new NullPointerException(format("Value '%s' must not be null.", name));
         }
 
         return value;

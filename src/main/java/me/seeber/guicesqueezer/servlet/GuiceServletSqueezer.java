@@ -72,10 +72,10 @@ public class GuiceServletSqueezer extends GuiceSqueezer {
                 try {
                     this.wrappedStatement.evaluate();
                 }
-                catch (final Error e) {
+                catch (Error e) {
                     throw e;
                 }
-                catch (final Exception e) {
+                catch (Exception e) {
                     throw e;
                 }
                 catch (Throwable t) {

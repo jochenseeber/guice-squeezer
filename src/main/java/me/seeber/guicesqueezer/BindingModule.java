@@ -342,7 +342,7 @@ public class BindingModule implements Module {
                 return object;
             }
             catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-                throw new IllegalStateException(format("Error calling provider mmethod '%s'", this.method));
+                throw new IllegalStateException(format("Error calling provider mmethod '%s'", this.method), e);
             }
         }
 
